@@ -1,0 +1,12 @@
+name: FundamentalsXChat
+version: 1.2.1
+author: WiseHollow
+main: com.WiseHollow.FundamentalsChat.Main
+
+depend: [FundamentalsX, Vault]
+load: startup
+
+commands:
+      Mute:
+          description: Prevents a player from talking publicly.
+          usage: /<command> <Player>
