@@ -7,12 +7,8 @@ import net.milkbowl.vault.permission.Permission;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.logging.Logger;
-
-public class Main extends JavaPlugin
-{
-    public static Main plugin = null;
-    public static Logger logger = null;
+public class Main extends JavaPlugin {
+    private static Main plugin = null;
     private static Permission perms = null;
     private static Chat chat = null;
 
@@ -20,43 +16,45 @@ public class Main extends JavaPlugin
         return chat;
     }
 
-    @Override
-    public void onEnable()
-    {
-        plugin = this;
-        logger = this.getLogger();
+    public static Main getPlugin() {
+        return plugin;
+    }
 
-        logger.info("Permissions hook: " + setupPermissions());
-        logger.info("Chat hook: " + setupChat());
+    @Override
+    public void onEnable() {
+        plugin = this;
+
+        getLogger().info("Permissions hook: " + setupPermissions());
+        getLogger().info("Chat hook: " + setupChat());
 
         this.getCommand("Mute").setExecutor(new CommandMute());
 
         getServer().getPluginManager().registerEvents(new Settings(), this);
         getServer().getPluginManager().registerEvents(new ChatEvents(), this);
 
-        logger.info(plugin.getName() + " is now enabled!");
-    }
-    @Override
-    public void onDisable()
-    {
-        logger.info(plugin.getName() + " is now disabled!");
+        getLogger().info(plugin.getName() + " is now enabled!");
     }
 
-    private boolean setupPermissions()
-    {
+    @Override
+    public void onDisable() {
+        getLogger().info(plugin.getName() + " is now disabled!");
+    }
+
+    private boolean setupPermissions() {
         RegisteredServiceProvider<Permission> rsp = getServer().getServicesManager().getRegistration(Permission.class);
         try {
             perms = rsp.getProvider();
-        } catch (Exception exception) { }
+        } catch (Exception exception) {
+        }
         return perms != null;
     }
 
-    private boolean setupChat()
-    {
+    private boolean setupChat() {
         RegisteredServiceProvider<Chat> rsp = getServer().getServicesManager().getRegistration(Chat.class);
         try {
             chat = rsp.getProvider();
-        } catch (Exception exception) { }
+        } catch (Exception exception) {
+        }
         return chat != null;
     }
 

@@ -4,6 +4,9 @@ import com.WiseHollow.Fundamentals.Language;
 import com.WiseHollow.FundamentalsChat.EmojiChat;
 import com.WiseHollow.FundamentalsChat.Main;
 import com.WiseHollow.FundamentalsChat.Settings;
+import net.md_5.bungee.api.chat.ComponentBuilder;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
@@ -14,6 +17,7 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Created by John on 10/14/2016.
@@ -24,19 +28,52 @@ public class ChatEvents implements Listener {
     public void FormatPrefix(AsyncPlayerChatEvent event) {
         if (!event.isCancelled() && Main.getChat() != null) {
             String format = "<%1$s> %2$s";
+            TextComponent textComponent = null;
 
             String[] gPrefixes = Main.getChat().getPlayerGroups(event.getPlayer());
-            String gPrefix = null;
+            String gPrefix;
             if (gPrefixes.length > 0) {
                 gPrefix = Main.getChat().getGroupPrefix(event.getPlayer().getWorld(), gPrefixes[0]);
-                format = ChatColor.translateAlternateColorCodes('&', gPrefix) + format;
-            }
-            String uPrefix = Main.getChat().getPlayerPrefix(event.getPlayer());
-            if (uPrefix != null && !uPrefix.equals(gPrefix)) {
-                format = ChatColor.translateAlternateColorCodes('&', uPrefix) + format;
+
+                Optional<String> hoverMessageOptional = Settings.getHoverMessage(gPrefix);
+                if (hoverMessageOptional.isPresent()) {
+                    String hoverMessage = ChatColor.translateAlternateColorCodes('&', hoverMessageOptional.get());
+                    TextComponent prefixComponent = new TextComponent(ChatColor.translateAlternateColorCodes('&', gPrefix));
+                    prefixComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(hoverMessage).create()));
+                    TextComponent contentsComponent = new TextComponent(format.replace("%1$s", event.getPlayer().getDisplayName()).replace("%2$s", event.getMessage()));
+
+                    textComponent = new TextComponent("");
+                    textComponent.addExtra(prefixComponent);
+                    textComponent.addExtra(contentsComponent);
+                } else {
+                    gPrefix = ChatColor.translateAlternateColorCodes('&', gPrefix);
+                    format = gPrefix + format;
+                }
+            } else {
+                String uPrefix = Main.getChat().getPlayerPrefix(event.getPlayer());
+                Optional<String> hoverMessageOptional = Settings.getHoverMessage(uPrefix);
+                if (hoverMessageOptional.isPresent()) {
+                    String hoverMessage = ChatColor.translateAlternateColorCodes('&', hoverMessageOptional.get());
+                    TextComponent prefixComponent = new TextComponent(ChatColor.translateAlternateColorCodes('&', uPrefix));
+                    prefixComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(hoverMessage).create()));
+                    TextComponent contentsComponent = new TextComponent(format.replace("%1$s", event.getPlayer().getDisplayName()).replace("%2$s", event.getMessage()));
+
+                    textComponent = new TextComponent("");
+                    textComponent.addExtra(prefixComponent);
+                    textComponent.addExtra(contentsComponent);
+                } else if (uPrefix != null) {
+                    uPrefix = ChatColor.translateAlternateColorCodes('&', uPrefix);
+                    format = uPrefix + format;
+                }
             }
 
-            event.setFormat(format);
+            if (textComponent != null) {
+                TextComponent finalTextComponent = textComponent;
+                event.getRecipients().forEach(recipient -> recipient.spigot().sendMessage(finalTextComponent));
+                event.getRecipients().clear();
+            } else {
+                event.setFormat(format);
+            }
         }
     }
 

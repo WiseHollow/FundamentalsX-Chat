@@ -6,12 +6,10 @@ import java.util.regex.Pattern;
 /**
  * Created by John on 10/15/2016.
  */
-public class EmojiChat
-{
-    private static HashMap<String,String> emojis = new HashMap<>();
+public class EmojiChat {
+    private static HashMap<String, String> emojis = new HashMap<>();
 
-    public static boolean Load()
-    {
+    public static boolean Load() {
         emojis.clear();
 
         emojis.put("<3", "❤");
@@ -38,12 +36,9 @@ public class EmojiChat
         return true;
     }
 
-    public static String Convert(String message)
-    {
-        for (String s : message.split(" "))
-        {
-            if (emojis.containsKey(s))
-            {
+    public static String Convert(String message) {
+        for (String s : message.split(" ")) {
+            if (emojis.containsKey(s)) {
                 message = message.replaceAll(Pattern.quote(s), emojis.get(s));
             }
         }
