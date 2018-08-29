@@ -12,10 +12,12 @@ import org.bukkit.ChatColor;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,54 +26,53 @@ import java.util.Optional;
  */
 public class ChatEvents implements Listener {
 
-    @EventHandler
+    private TextComponent createAffixTextComponent(String prefix, String hoverMessage) {
+        TextComponent prefixComponent = new TextComponent(ChatColor.translateAlternateColorCodes('&', prefix));
+        prefixComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(hoverMessage).create()));
+        return prefixComponent;
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
     public void FormatPrefix(AsyncPlayerChatEvent event) {
         if (!event.isCancelled() && Main.getChat() != null) {
+            String[] playerGroups = Main.getChat().getPlayerGroups(event.getPlayer());
             String format = "<%1$s> %2$s";
-            TextComponent textComponent = null;
 
-            String[] gPrefixes = Main.getChat().getPlayerGroups(event.getPlayer());
-            String gPrefix;
-            if (gPrefixes.length > 0) {
-                gPrefix = Main.getChat().getGroupPrefix(event.getPlayer().getWorld(), gPrefixes[0]);
+            if (Settings.UseAffixes && playerGroups.length > 0) {
+                final TextComponent textComponent = new TextComponent("");
+                TextComponent contentsComponent = new TextComponent(format.replace("%1$s", event.getPlayer().getDisplayName()).replace("%2$s", event.getMessage()));
+                List<String> playerPrefixes = new ArrayList<>();
+                Arrays.stream(playerGroups).forEach(group -> {
+                    String prefix = Main.getChat().getGroupPrefix(event.getPlayer().getWorld(), group);
+                    if (prefix != null)
+                        playerPrefixes.add(prefix);
+                });
 
-                Optional<String> hoverMessageOptional = Settings.getHoverMessage(gPrefix);
-                if (hoverMessageOptional.isPresent()) {
-                    String hoverMessage = ChatColor.translateAlternateColorCodes('&', hoverMessageOptional.get());
-                    TextComponent prefixComponent = new TextComponent(ChatColor.translateAlternateColorCodes('&', gPrefix));
-                    prefixComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(hoverMessage).create()));
-                    TextComponent contentsComponent = new TextComponent(format.replace("%1$s", event.getPlayer().getDisplayName()).replace("%2$s", event.getMessage()));
+                playerPrefixes.forEach(prefix -> {
+                    Optional<String> optionalHoverMessage = Settings.getHoverMessage(prefix);
+                    if (optionalHoverMessage.isPresent()) {
+                        String hoverMessage = ChatColor.translateAlternateColorCodes('&', optionalHoverMessage.get());
+                        TextComponent prefixComponent = createAffixTextComponent(prefix, hoverMessage);
+                        textComponent.addExtra(prefixComponent);
+                    }
+                });
 
-                    textComponent = new TextComponent("");
-                    textComponent.addExtra(prefixComponent);
-                    textComponent.addExtra(contentsComponent);
-                } else {
-                    gPrefix = ChatColor.translateAlternateColorCodes('&', gPrefix);
-                    format = gPrefix + format;
-                }
-            } else {
-                String uPrefix = Main.getChat().getPlayerPrefix(event.getPlayer());
-                Optional<String> hoverMessageOptional = Settings.getHoverMessage(uPrefix);
-                if (hoverMessageOptional.isPresent()) {
-                    String hoverMessage = ChatColor.translateAlternateColorCodes('&', hoverMessageOptional.get());
-                    TextComponent prefixComponent = new TextComponent(ChatColor.translateAlternateColorCodes('&', uPrefix));
-                    prefixComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(hoverMessage).create()));
-                    TextComponent contentsComponent = new TextComponent(format.replace("%1$s", event.getPlayer().getDisplayName()).replace("%2$s", event.getMessage()));
+                textComponent.addExtra(contentsComponent);
 
-                    textComponent = new TextComponent("");
-                    textComponent.addExtra(prefixComponent);
-                    textComponent.addExtra(contentsComponent);
-                } else if (uPrefix != null) {
-                    uPrefix = ChatColor.translateAlternateColorCodes('&', uPrefix);
-                    format = uPrefix + format;
-                }
-            }
-
-            if (textComponent != null) {
-                TextComponent finalTextComponent = textComponent;
-                event.getRecipients().forEach(recipient -> recipient.spigot().sendMessage(finalTextComponent));
+                event.getRecipients().forEach(recipient -> recipient.spigot().sendMessage(textComponent));
                 event.getRecipients().clear();
             } else {
+                String[] gPrefixes = Main.getChat().getPlayerGroups(event.getPlayer());
+                String gPrefix = null;
+                if (gPrefixes.length > 0) {
+                    gPrefix = Main.getChat().getGroupPrefix(event.getPlayer().getWorld(), gPrefixes[0]);
+                    format = ChatColor.translateAlternateColorCodes('&', gPrefix) + format;
+                }
+                String uPrefix = Main.getChat().getPlayerPrefix(event.getPlayer());
+                if (uPrefix != null && !uPrefix.equals(gPrefix)) {
+                    format = ChatColor.translateAlternateColorCodes('&', uPrefix) + format;
+                }
+
                 event.setFormat(format);
             }
         }

@@ -17,6 +17,7 @@ public class Settings implements Listener {
     public static boolean UseEmojiChat = true;
     public static boolean UsePlayerMention = true;
 
+    public static boolean UseAffixes = false;
     private static HashMap<String, String> affixHoverMessages = new HashMap<>();
 
     private static void load() {
@@ -25,6 +26,7 @@ public class Settings implements Listener {
         UseEmojiChat = configuration.getBoolean("Emoji_Chat");
         UsePlayerMention = configuration.getBoolean("Player_Mention");
 
+        UseAffixes = configuration.getBoolean("Use_Affixes");
         ConfigurationSection section = configuration.getConfigurationSection("Affixes");
         for (String key : section.getKeys(false)) {
             String value = section.getString(key);
